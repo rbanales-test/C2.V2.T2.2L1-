@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Topic 2.2: Modulation — Making a Sound Move (LFO Targets)</title>
+  <style>
+    :root {
+      --coursera-blue: #0056D2;
+      --coursera-blue-focus: #00419E;
+      --text-dark: #1F1F1F;
+      --bg-light: #F8F9FA;
+      --card-bg: #FFFFFF;
+      --border-color: #D1D5DB;
+      --focus-outline: #FFB800;
+      --highlight-bg: #EBF3FF;
+      --lfo-wave-color: #0056D2;
+    }
+
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-dark);
+      display: flex;
+      justify-content: center;
+    }
+
+    .interactive-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      max-width: 740px;
+      width: 100%;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.25rem;
+      color: var(--text-dark);
+    }
+
+    p.lead-text {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* Target Selector Buttons */
+    .target-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-target {
+      background-color: #F3F4F6;
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      color: var(--text-dark);
+    }
+
+    .btn-target:focus {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 2px;
+    }
+
+    .btn-target[aria-pressed="true"] {
+      background-color: var(--highlight-bg);
+      border-color: var(--coursera-blue);
+    }
+
+    .target-name {
+      display: block;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--coursera-blue);
+    }
+
+    .target-sub {
+      display: block;
+      font-size: 0.82rem;
+      color: #4B5563;
+      margin-top: 2px;
+    }
+
+    /* Routing & LFO Wave Visualizer */
+    .visualizer-box {
+      background-color: #F9FAFB;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .routing-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .routing-tag {
+      background-color: #E5E7EB;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: var(--text-dark);
+    }
+
+    .routing-tag.active {
+      background-color: var(--coursera-blue);
+      color: #FFFFFF;
+    }
+
+    .svg-container {
+      width: 100%;
+      height: 90px;
+      display: block;
+    }
+
+    .lfo-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #6B7280;
+      margin-top: 4px;
+    }
+
+    /* Audio Trigger */
+    .audio-action-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn-audio {
+      padding: 10px 20px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #FFFFFF;
+      background-color: var(--coursera-blue);
+      border: 2px solid var(--coursera-blue-focus);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-audio:focus {
+      outline: 3px solid var(--focus-outline);
+      outline-offset: 2px;
+    }
+
+    .audio-hint {
+      font-size: 0.85rem;
+      color: #4B5563;
+    }
+
+    /* Live Info Panel */
+    .info-card {
+      background-color: var(--highlight-bg);
+      border-left: 4px solid var(--coursera-blue);
+      padding: 16px;
+      border-radius: 0 6px 6px 0;
+      line-height: 1.5;
+    }
+
+    .info-card h3 {
+      margin-top: 0;
+      margin-bottom: 6px;
+      font-size: 1rem;
+      color: var(--text-dark);
+    }
+
+    .info-card p {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .info-card .analogy-box {
+      margin-top: 8px;
+      font-size: 0.88rem;
+      color: #374151;
+    }
+
+    .footer-clarification {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: #4B5563;
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="interactive-card" role="region" aria-labelledby="mod-title">
+    <h2 id="mod-title">Topic 2.2: Modulation — Making a Sound Move</h2>
+    <p class="lead-text">
+      Modulation means one signal changes another signal over time. A synth connects a <strong>modulation source</strong> (the control that moves) to a <strong>target</strong> (the setting that changes). Select a target below to inspect how a Low Frequency Oscillator (LFO) sculpts different acoustic effects.
+    </p>
+
+    <!-- Target Selection Grid -->
+    <div class="target-grid" role="group" aria-label="Modulation Targets">
+      <button id="btn-vibrato" class="btn-target" aria-pressed="true" aria-controls="status-panel">
+        <span class="target-name">Target: Pitch (Vibrato)</span>
+        <span class="target-sub">A wobble in pitch (~5 to 6 Hz)</span>
+      </button>
+
+      <button id="btn-tremolo" class="btn-target" aria-pressed="false" aria-controls="status-panel">
+        <span class="target-name">Target: Loudness (Tremolo)</span>
+        <span class="target-sub">A pulse in volume (faster rate)</span>
+      </button>
+
+      <button id="btn-wah" class="btn-target" aria-pressed="false" aria-controls="status-panel">
+        <span class="target-name">Target: Filter Cutoff (Wah)</span>
+        <span class="target-sub">A brightness sweep</span>
+      </button>
+    </div>
+
+    <!-- Routing and Visualizer Display -->
+    <div class="visualizer-box" aria-hidden="true">
+      <div class="routing-line">
+        <span class="routing-tag">Source: LFO (slow wave)</span>
+        <span>──► [Routing Connection] ──►</span>
+        <span class="routing-tag active" id="active-target-tag">Target: Pitch (Oscillator)</span>
+      </div>
+
+      <!-- LFO Wave Graphic -->
+      <svg class="svg-container" viewBox="0 0 600 80" preserveAspectRatio="none">
+        <line x1="0" y1="40" x2="600" y2="40" stroke="#E5E7EB" stroke-width="1.5" stroke-dasharray="4" />
+        <path id="lfo-path" d="M 0 40 Q 37.5 10 75 40 T 150 40 T 225 40 T 300 40 T 375 40 T 450 40 T 525 40 T 600 40" 
+              fill="none" stroke="var(--lfo-wave-color)" stroke-width="2.5" stroke-linecap="round" />
+      </svg>
+      <div class="lfo-legend">
+        <span>Slow, repeating LFO wave (runs continuously)</span>
+        <span>Time ──►</span>
+      </div>
+    </div>
+
+    <!-- Audition Section -->
+    <div class="audio-action-row">
+      <button id="btn-play" class="btn-audio" aria-label="Audition the selected modulation target">
+        ▶ Audition Modulation
+      </button>
+      <span class="audio-hint" id="audio-desc">Listening to: Vibrato (pitch wobbles 5 to 6 times per second).</span>
+    </div>
+
+    <!-- Screen Reader Accessible Live Status -->
+    <div id="status-panel" class="info-card" role="status" aria-live="polite">
+      <h3 id="panel-title">Vibrato: The Wobble That Makes a Note Sing</h3>
+      <p id="panel-desc">
+        A violinist rocks a finger back and forth on the string. The pitch rises and falls slightly, which makes the note warm. On a synth, an LFO sent to <strong>pitch</strong> does the same. Set the speed to about 5 to 6 Hz (cycles per second) and the depth to a small amount.
+      </p>
+      <div class="analogy-box" id="panel-analogy">
+        <strong>Analogy: a singer’s vibrato.</strong> A singer’s voice wobbles up and down a little, several times per second. An LFO does that steady wobble.
+      </div>
+    </div>
+
+    <div class="footer-clarification">
+      <strong>Control flow versus sound flow:</strong> The sound flow is the audio path: oscillator, then filter, then amplifier. Control flow is the set of signals that move the settings over time. Modulation does not replace the audio path; it moves the dials along it.
+    </div>
+  </main>
+
+  <script>
+    const modData = {
+      vibrato: {
+        tag: "Target: Pitch (Oscillator)",
+        title: "Vibrato: The Wobble That Makes a Note Sing",
+        desc: "A violinist rocks a finger back and forth on the string. The pitch rises and falls slightly, which makes the note warm. On a synth, an LFO sent to pitch does the same. Set the speed to about 5 to 6 Hz (cycles per second) and the depth to a small amount.",
+        analogy: "<strong>Analogy: a singer’s vibrato.</strong> A singer’s voice wobbles up and down a little, several times per second. An LFO does that steady wobble.",
+        audioText: "Listening to: Vibrato (pitch wobbles 5 to 6 times per second).",
+        lfoSpeed: 5.5
+      },
+      tremolo: {
+        tag: "Target: Loudness (Amplifier)",
+        title: "Tremolo: The Shimmer of a Mandolin",
+        desc: "A mandolin player’s pick moves rapidly across the strings, so the note pulses. On a synth, an LFO sent to loudness does the same. Set the speed faster than vibrato.",
+        analogy: "Loudness pulses on and off quickly and evenly, like a mandolin’s shimmer.",
+        audioText: "Listening to: Tremolo (loudness pulses on and off quickly and evenly).",
+        lfoSpeed: 8.5
+      },
+      wah: {
+        tag: "Target: Filter Cutoff (Filter)",
+        title: "Wah: A Trumpet with a Cupped Hand",
+        desc: "A trumpet player cups a hand over the bell, and the sound goes 'wah.' It is brighter when the hand is open and darker when it closes. On a synth, an LFO or the mod wheel sent to the filter cutoff does the same.",
+        analogy: "<strong>Analogy: a hand on a radio speaker.</strong> Cover the speaker and the sound is muffled. Uncover it and it opens up. A filter sweep is that hand moving.",
+        audioText: "Listening to: Wah effect (filter cutoff sweeps between dark and bright).",
+        lfoSpeed: 2.0
+      }
+    };
+
+    let activeTarget = 'vibrato';
+    let audioCtx = null;
+
+    const btnVibrato = document.getElementById('btn-vibrato');
+    const btnTremolo = document.getElementById('btn-tremolo');
+    const btnWah = document.getElementById('btn-wah');
+    const activeTargetTag = document.getElementById('active-target-tag');
+    const panelTitle = document.getElementById('panel-title');
+    const panelDesc = document.getElementById('panel-desc');
+    const panelAnalogy = document.getElementById('panel-analogy');
+    const audioDesc = document.getElementById('audio-desc');
+    const btnPlay = document.getElementById('btn-play');
+
+    function selectTarget(targetKey) {
+      activeTarget = targetKey;
+      btnVibrato.setAttribute('aria-pressed', targetKey === 'vibrato');
+      btnTremolo.setAttribute('aria-pressed', targetKey === 'tremolo');
+      btnWah.setAttribute('aria-pressed', targetKey === 'wah');
+
+      const d = modData[targetKey];
+      activeTargetTag.textContent = d.tag;
+      panelTitle.textContent = d.title;
+      panelDesc.textContent = d.desc;
+      panelAnalogy.innerHTML = d.analogy;
+      audioDesc.textContent = d.audioText;
+    }
+
+    btnVibrato.addEventListener('click', () => selectTarget('vibrato'));
+    btnTremolo.addEventListener('click', () => selectTarget('tremolo'));
+    btnWah.addEventListener('click', () => selectTarget('wah'));
+
+    btnPlay.addEventListener('click', () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+      const duration = 2.0;
+
+      // Sound Flow: Oscillator -> Filter -> Amplifier -> Output
+      const carrier = audioCtx.createOscillator();
+      const filter = audioCtx.createBiquadFilter();
+      const amp = audioCtx.createGain();
+
+      carrier.type = 'sawtooth';
+      carrier.frequency.setValueAtTime(261.63, now); // Middle C (Note 60)
+
+      // Control Flow: LFO -> Modulation Target
+      const lfo = audioCtx.createOscillator();
+      const lfoGain = audioCtx.createGain();
+
+      lfo.frequency.setValueAtTime(modData[activeTarget].lfoSpeed, now);
+
+      if (activeTarget === 'vibrato') {
+        // Vibrato: LFO modulates pitch at ~5.5 Hz with an audible depth (±14 Hz)
+        filter.frequency.setValueAtTime(4000, now);
+        amp.gain.setValueAtTime(0.25, now);
+
+        lfoGain.gain.setValueAtTime(14, now);
+        lfo.connect(lfoGain);
+        lfoGain.connect(carrier.frequency);
+      } else if (activeTarget === 'tremolo') {
+        // Tremolo: LFO modulates loudness at 8.5 Hz
+        filter.frequency.setValueAtTime(4000, now);
+        amp.gain.setValueAtTime(0.2, now);
+
+        lfoGain.gain.setValueAtTime(0.18, now);
+        lfo.connect(lfoGain);
+        lfoGain.connect(amp.gain);
+      } else if (activeTarget === 'wah') {
+        // Wah: LFO sweeps the filter cutoff at 2.0 Hz
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(900, now);
+        filter.Q.setValueAtTime(4.0, now);
+        amp.gain.setValueAtTime(0.25, now);
+
+        lfoGain.gain.setValueAtTime(700, now);
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+      }
+
+      // Smooth amplitude envelope to prevent clicks
+      const masterEnv = audioCtx.createGain();
+      masterEnv.gain.setValueAtTime(0.0001, now);
+      masterEnv.gain.linearRampToValueAtTime(1.0, now + 0.05);
+      masterEnv.gain.setValueAtTime(1.0, now + duration - 0.1);
+      masterEnv.gain.linearRampToValueAtTime(0.0001, now + duration);
+
+      carrier.connect(filter);
+      filter.connect(amp);
+      amp.connect(masterEnv);
+      masterEnv.connect(audioCtx.destination);
+
+      carrier.start(now);
+      lfo.start(now);
+      carrier.stop(now + duration);
+      lfo.stop(now + duration);
+    });
+  </script>
+</body>
+</html>
